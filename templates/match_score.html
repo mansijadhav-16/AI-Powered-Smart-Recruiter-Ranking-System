@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Match Score Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .score-circle {
+            width: 140px; height: 140px; border-radius: 50%;
+            border: 8px solid #6366f1; display: flex;
+            align-items: center; justify-content: center;
+            font-size: 28px; font-weight: bold; margin: auto;
+            color: #4338ca; background: white;
+        }
+        .skill-badge { background: #e0e7ff; color: #4338ca; border-radius: 20px; padding: 6px 16px; margin: 4px; display: inline-block; font-size: 0.9rem; font-weight: 500; }
+        .card { border: none; border-radius: 15px; }
+        .sidebar-container { background: white; border-radius: 15px; height: 85vh; overflow-y: auto; }
+        .candidate-item { border-left: 4px solid transparent; transition: 0.3s; }
+        .candidate-item.active { background: #f0f3ff; border-left-color: #6366f1; }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid py-4">
+    <div class="row g-4">
+        <div class="col-md-9">
+            <a href="/dashboard" class="btn btn-outline-secondary btn-sm mb-4">← Back to Dashboard</a>
+
+            {% if data %}
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card p-4 text-center shadow-sm h-100">
+                        <h5 class="fw-bold text-secondary">Overall Match</h5>
+                        <div class="score-circle mt-3">{{ data.overall_score|default(0) }}%</div>
+                        <p class="text-muted mt-4 mb-0">Analysis for Candidate:</p>
+                        <h4 class="fw-bold">{{ data.candidate_name|default('Unknown Candidate') }}</h4>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <div class="card p-4 shadow-sm h-100">
+                        <h5 class="fw-bold mb-4">Visual Skill Analysis</h5>
+                        <canvas id="matchChart" style="max-height: 350px;"></canvas>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card p-4 shadow-sm">
+                        <h6 class="text-success fw-bold mb-3">✅ Matched Skills</h6>
+                        <div class="d-flex flex-wrap">
+                            {% if data.top_skills %}
+                                {% for skill in data.top_skills %}
+                                <span class="skill-badge">{{ skill }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No specific skills matched.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card p-4 shadow-sm border-start border-danger border-4">
+                        <h6 class="text-danger fw-bold mb-3">❌ Missing Skills</h6>
+                        <div class="d-flex flex-wrap">
+                            {% if data.missing_skills %}
+                                {% for skill in data.missing_skills %}
+                                <span class="skill-badge bg-white text-danger border border-danger">{{ skill }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-success">Great! No critical skills missing.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning text-center">
+                <h4>No Data Found!</h4>
+                <p>Please select a candidate from the list.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 sidebar-container">
+                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-people-fill me-2"></i>All Candidates</h6>
+                <div class="list-group list-group-flush">
+                    {% if all_candidates %}
+                        {% for person in all_candidates %}
+                        <a href="{{ url_for('match_score', candidate_id=person.id) }}" 
+                           class="list-group-item list-group-item-action py-3 candidate-item {% if person.id == current_id %}active{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-bold mb-0" style="font-size: 0.9rem;">{{ person.candidate_name }}</div>
+                                    <small class="text-muted">{{ person.position|default('Applicant') }}</small>
+                                </div>
+                                <span class="badge rounded-pill {% if person.id == current_id %}bg-primary{% else %}bg-light text-dark{% endif %}">
+                                    {{ person.score }}
+                                </span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-center text-muted small">No other candidates found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    {% if data %}
+    const ctx = document.getElementById('matchChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Skills', 'Experience', 'Education', 'Location', 'Salary Fit'],
+                datasets: [{
+                    label: 'Match Level',
+                    data: [
+                        {{ data.skills_match|default(0) }}, 
+                        {{ data.experience_match|default(0) }}, 
+                        {{ data.education_match|default(0) }}, 
+                        85, 75
+                    ],
+                    fill: true,
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    borderColor: 'rgb(99, 102, 241)',
+                    pointBackgroundColor: 'rgb(99, 102, 241)',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { stepSize: 20 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+    {% endif %}
+</script>
+</body>
+</html>

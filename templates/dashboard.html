@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Dashboard | Smart Recruiter AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+    
+</head>
+<body>
+{% include "navbar.html" %}
+<style>
+
+    .skills-wrapper {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    flex-direction: row !important;
+    gap: 4px !important;
+    align-items: center;
+    padding: 5px 0;
+}
+
+    .skill-badge {
+    display: inline-block !important;
+    font-size: 10px !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    white-space: nowrap; /* Text ko wrap hone se rokega */
+    border: 1px solid rgba(0,0,0,0.05);
+    margin-bottom: 2px;
+    transition: all 0.2s ease;
+}
+
+/* Hover effect for a premium feel */
+.skill-badge:hover {
+    filter: brightness(0.9);
+    cursor: default;
+}
+
+/* Dashboard Style Colors: Green, Blue, Purple and Gray */
+.bg-skill-green { 
+    background-color: #dcfce7 !important; 
+    color: #15803d !important; 
+}
+.bg-skill-blue { 
+    background-color: #dbeafe !important; 
+    color: #1e40af !important; 
+}
+.bg-skill-purple { 
+    background-color: #f3e8ff !important; 
+    color: #6b21a8 !important; 
+}
+.bg-skill-gray { 
+    background-color: #f3f4f6 !important; 
+    color: #374151 !important; 
+}
+
+/* Column Width Control: Taaki table bhage na */
+td:has(.skills-wrapper) {
+    max-width: 250px; /* Aap isse chota ya bada kar sakte hain */
+    min-width: 150px;
+}
+.match-score-container { display: flex; align-items: center; gap: 8px; }
+        .match-bar { height: 6px; border-radius: 10px; width: 60px; background: #e2e8f0; overflow: hidden; }
+        
+        /* Floating Bottom Bar */
+        .action-footer {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 1000px;
+            background: white; border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 12px 24px; z-index: 1000;
+            border: 1px solid #e2e8f0;
+            display: none; /* Sirf checkbox select hone par dikhega */
+        }
+        
+        .status-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 6px; }
+        .bg-excellent { background-color: #dcfce7; color: #15803d; }
+        
+        .avatar-circle {
+            width: 35px; height: 35px; background-color: #e9ecef;
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-weight: bold; color: #495057;
+        }
+        .skill-badge {
+            background-color: #e8f5e9; color: #2e7d32; border: none;
+            border-radius: 12px; padding: 2px 10px; font-size: 11px; margin: 1px;
+        }
+        .status-pill {
+            border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 500;
+        }
+        .bg-excellent { background-color: #e8f5e9; color: #2e7d32; } /* Green */
+        .bg-good { background-color: #e3f2fd; color: #1565c0; }      /* Blue */
+        .bg-low { background-color: #ffebee; color: #c62828; }
+</style>
+
+<div class="container pb-5">
+    <div class="main-content">
+        <div class="mb-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold" style="color: #0f4355; font-family:'fantasy';">Welcome, {{ name }}!</h2> 
+                <p class="text-muted">Monitor and manage your recruitment pipeline with AI-powered insights</p>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="text-primary mb-2"><i class="bi bi-file-earmark-text fs-4"></i></div>
+                    <h3 class="fw-bold mb-0" style="font-size: 2rem;">{{ total_resumes }}</h3>
+                    <small class="text-muted">Total Resumes</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="text-success mb-2"><i class="bi bi-calendar-check fs-4"></i></div>
+                    <h3 class="fw-bold mb-0" style="font-size: 2rem;">{{ analyzed_today }}</h3>
+                    <small class="text-muted">Analyzed Today</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="text-warning mb-2"><i class="bi bi-star fs-4"></i></div>
+                    <h3 class="fw-bold mb-0" style="font-size: 2rem;">{{ high_matches }}</h3>
+                    <small class="text-muted">High Matches</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="text-danger mb-2"><i class="bi bi-clock-history fs-4"></i></div>
+                    <h3 class="fw-bold mb-0" style="font-size: 2rem;">{{ pending_review }}</h3>
+                    <small class="text-muted">Pending Review</small>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="fw-bold mb-3">Quick Actions</h5>
+        <div class="row g-3 mb-5 text-center">
+            <div class="col-md-3">
+                <div class="action-card" style="background: #e6f7f3; color: #00a884;" data-bs-toggle="modal" data-bs-target="#analyzeModal">
+                    <i class="bi bi-cloud-arrow-up fs-2"></i>
+                    <p class="mt-2 fw-semibold mb-0">Upload Resume</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+    {% if applicants and applicants|length > 0 %}
+        <a href="{{ url_for('match_score', candidate_id=applicants[0].id) }}" class="text-decoration-none">
+    {% else %}
+        <a href="#" class="text-decoration-none">
+    {% endif %}
+        <div class="action-card" style="background: #eef2ff; color: #4e73df; padding: 20px; text-align: center; border-radius: 10px;">
+            <i class="bi bi-bar-chart fs-2"></i>
+            <p class="mt-2 fw-semibold mb-0">View Match Score</p>
+        </div>
+    </a>
+</div>
+        <div class="col-md-3">
+    <a href="{{ url_for('skill_heatmap') }}" class="text-decoration-none">
+        <div class="action-card bg-heatmap">
+            <i class="bi bi-fire fs-2"></i> <p class="mt-2 fw-semibold mb-0">Skill Heatmap</p>
+        </div>
+    </a>
+</div>
+            <div class="col-md-3">
+                <div class="action-card" style="background: #f3f0ff; color: #9f7aea;" data-bs-toggle="modal" data-bs-target="#interviewModal">
+                    <i class="bi bi-chat-quote fs-2"></i>
+                    <p class="mt-2 fw-semibold mb-0">Interview Questions</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container border">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold mb-0" style="color:#ffffff;">Recent Candidates</h5>
+                <a href="/applicants" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="resultsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>CANDIDATE</th>
+                            <th>POSITION</th>
+                            <th>EXPERIENCE</th>
+                            <th>KEY SKILLS</th>
+                            <th>MATCH SCORE</th>
+                            <th>STATUS</th>
+                            <th>UPLOAD DATE</th>
+                            <th>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if applicants %}
+        {% for app in applicants %}
+        <tr>
+            <td>
+                <div class="fw-bold" style="font-weight: 800; color: #000;">{{ app.candidate_name }}</div>
+                <div class="text-muted small">{{ app.email }}</div>
+            </td>
+
+            <td>{{ app.position }}</td>
+
+            <td>{{ app.experience }}</td>
+
+            <td><div class="skills-wrapper">
+        {% set skills_list = app.skills.replace('[', '').replace(']', '').replace('"', '').replace("'", "").split(',') %}
+        {% for skill in skills_list %}
+            {% if skill.strip() %}
+                <span class="skill-badge bg-skill-{{ ['green', 'blue', 'purple', 'gray'] | random }}">
+                    {{ skill.strip() }}
+                </span>
+            {% endif %}
+        {% endfor %}
+    </div></td>
+
+            <td>
+            {% set score_val = app.score.replace('%', '') | int %}
+            <span class="status-pill {% if score_val >= 85 %}bg-excellent{% elif score_val >= 70 %}bg-good{% else %}bg-low{% endif %}">
+                {{ app.score }}
+            </span>
+        </td>
+
+            <td>
+                <span class="badge" style="background-color: #fde4e4; color: #d63c3c; font-weight: 500;">
+                    {{ app.status or 'New' }}
+                </span>
+            </td>
+
+            <td class="small text-muted">{{ app.upload_date }}</td>
+
+            <td>
+                <a href="{{ url_for('view_resume', filename=app.filename) }}" target="blank" class="btn btn-sm" style="border: 1px solid #3498db; color: #3498db; background: white; padding: 2px 12px;">View</a>
+            </td>
+        </tr>
+        {% endfor %}
+    {% else %}
+        <tr>
+            <td colspan="8" class="text-center py-4 text-muted">No candidates found in the database.</td>
+        </tr>
+    {% endif %}
+</tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="analyzeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Upload & Analyze</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="multiUploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Upload Resume</label>
+                        <div class="upload-area" onclick="document.getElementById('resumesInput').click()">
+                            <i class="bi bi-file-earmark-pdf fs-1 text-muted"></i>
+                            <p class="mb-0 mt-2 small">Drag and drop PDF files here</p>
+                            <p class="text-muted small">or click to browse</p>
+                            <button type="button" class="btn btn-primary btn-sm mt-2 px-4" style="border-radius: 8px;">Choose File</button>
+                            <input type="file" name="resumes" id="resumesInput" style="display:none;" multiple accept=".pdf">
+                        </div>
+                        <div id="fileCount" class="small text-primary mt-2"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Job Description</label>
+                        <textarea name="job_description" class="form-control" rows="4" placeholder="Paste job description here..." style="border-radius: 12px; font-size: 0.9rem;"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" style="border-radius: 12px; background: #4e89ff;">Analyze Candidate</button>
+                </form>
+                <hr class="my-4">
+                <div class="small fw-bold text-uppercase text-muted mb-2" style="font-size: 0.7rem;">PROCESSING STATUS</div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>Flask Server</span>
+                    <span class="text-success"><span class="status-dot dot-connected"></span>Connected</span>
+                </div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>AI Model (spaCy)</span>
+                    <span class="text-success"><span class="status-dot dot-connected"></span>Loaded</span>
+                </div>
+                <div class="d-flex justify-content-between small">
+                    <span>NLP Processing</span>
+                    <span class="text-muted"><span class="status-dot dot-ready"></span>Ready</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="interviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px; border: none;">
+            <div class="modal-header border-0 px-4 pt-4">
+                <div>
+                    <h4 class="fw-bold mb-1">Generate Custom Interview Questions</h4>
+                    <p class="text-muted small mb-0">Create personalized interview questions based on job requirements and candidate profile</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body px-4 pb-4">
+                <div class="row g-4">
+                    <div class="col-md-5 border-end">
+                        <h6 class="fw-bold mb-3">Question Configuration</h6>
+                        
+                        <div class="mb-4">
+                            <label class="small fw-bold text-muted mb-2 d-block">Question Types</label>
+                            <div class="form-check small mb-1">
+                                <input class="form-check-input q-type" type="checkbox" value="Technical" checked>
+                                <label class="form-check-label">Technical Skills</label>
+                            </div>
+                            <div class="form-check small mb-1">
+                                <input class="form-check-input q-type" type="checkbox" value="Behavioral" checked>
+                                <label class="form-check-label">Behavioral</label>
+                            </div>
+                            <div class="form-check small mb-1">
+                                <input class="form-check-input q-type" type="checkbox" value="Situational">
+                                <label class="form-check-label">Situational</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="small fw-bold text-muted mb-2 d-block">Difficulty Level</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="diff" id="easy" value="Easy">
+                                <label class="btn btn-outline-success btn-sm" for="easy">Easy</label>
+                                <input type="radio" class="btn-check" name="diff" id="medium" value="Medium" checked>
+                                <label class="btn btn-outline-primary btn-sm" for="medium">Medium</label>
+                                <input type="radio" class="btn-check" name="diff" id="hard" value="Hard">
+                                <label class="btn btn-outline-danger btn-sm" for="hard">Hard</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="small fw-bold text-muted mb-2 d-block">Job Role</label>
+                            <select class="form-select form-select-sm mb-2" id="jobRoleSelect">
+                                <option>Full Stack Developer</option>
+                                <option>Data Scientist</option>
+                                <option>UI/UX Designer</option>
+                                <option value="new">+ Add New Role</option>
+                            </select>
+                            <input type="text" id="newRoleInput" class="form-control form-control-sm d-none" placeholder="Enter custom role...">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="small fw-bold text-muted mb-2 d-block">Number of Questions</label>
+                            <div class="input-group input-group-sm w-50">
+                                <button class="btn btn-outline-secondary" onclick="updateCount(-1)">-</button>
+                                <input type="text" id="qCount" class="form-control text-center" value="5">
+                                <button class="btn btn-outline-secondary" onclick="updateCount(1)">+</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="small fw-bold text-muted mb-2 d-block">Focus Skills (Optional)</label>
+                            <textarea id="focusSkills" class="form-control form-control-sm" rows="3" placeholder="React, Node.js, AWS..."></textarea>
+                        </div>
+
+                        <button class="btn btn-primary w-100 fw-bold py-2" id="generateBtn" onclick="generateAIQuestions()">
+                            <i class="bi bi-stars me-2"></i>Generate Questions
+                        </button>
+                    </div>
+
+                    <div class="col-md-7">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0">Generated Questions</h6>
+                            <div>
+                                <button class="btn btn-light btn-sm" onclick="exportToPDF()">
+                                    <i class="bi bi-download me-1"></i> Export
+                                </button>
+        
+                                <button class="btn btn-success btn-sm ms-2">
+                                    <i class="bi bi-check2 me-1"></i> Save
+                                </button>
+                            </div>
+                        </div>
+                        <div id="questionsResult" class="p-5 text-center text-muted" style="background: #f8f9fa; border-radius: 15px; min-height: 400px;">
+                            <i class="bi bi-chat-left-dots fs-1 d-block mb-3 opacity-25"></i>
+                            Configure your preferences and click "Generate Questions" to create custom interview questions
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function updateCount(val) {
+        let input = document.getElementById('qCount');
+        let current = parseInt(input.value);
+        if (current + val >= 1) input.value = current + val;
+    }
+
+    document.getElementById('jobRoleSelect').addEventListener('change', function() {
+        const newRoleInput = document.getElementById('newRoleInput');
+        if (this.value === 'new') {
+            newRoleInput.classList.remove('d-none');
+        } else {
+            newRoleInput.classList.add('d-none');
+        }
+    });
+
+    async function loadNotifications() {
+    try {
+        const res = await fetch('/get_notifications');
+        const data = await res.json();
+
+        // 1. Update Count Badge
+        const countBadge = document.getElementById('notif-count');
+        countBadge.innerText = data.count;
+        countBadge.style.display = data.count > 0 ? 'inline' : 'none';
+
+        // 2. Update Dropdown List
+        const dropdown = document.getElementById('notif-dropdown');
+        if (data.count === 0) {
+            dropdown.innerHTML = '<div class="p-3 text-center text-muted small">No new notifications</div>';
+            return;
+        }
+
+        let html = '<h6 class="dropdown-header">Recent Notifications</h6>';
+        data.notifications.forEach(n => {
+            html += `
+                <a class="dropdown-item d-flex align-items-center border-bottom py-2" href="#">
+                    <div class="me-3">
+                        <div class="icon-circle bg-light text-primary">
+                            <i class="bi bi-info-circle"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="small text-dark fw-bold">${n.title}</div>
+                        <div class="small text-muted">${n.message}</div>
+                        <div class="x-small text-secondary mt-1">${n.time}</div>
+                    </div>
+                </a>`;
+        });
+        dropdown.innerHTML = html;
+    } catch (err) {
+        console.error("Notif Error:", err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadNotifications);
+setInterval(loadNotifications, 60000);
+
+
+    async function generateAIQuestions() {
+    const btn = document.getElementById('generateBtn');
+    const resultArea = document.getElementById('questionsResult');
+    
+    // Role selection logic
+    const role = document.getElementById('jobRoleSelect').value === 'new' ? 
+                 document.getElementById('newRoleInput').value : 
+                 document.getElementById('jobRoleSelect').value;
+    
+    // Checkboxes se categories uthana
+    const types = Array.from(document.querySelectorAll('.q-type:checked')).map(cb => cb.value);
+    
+    // Difficulty aur baaki inputs
+    const difficulty = document.querySelector('input[name="diff"]:checked').value;
+    const count = document.getElementById('qCount').value;
+    const focus = document.getElementById('focusSkills').value;
+
+    // Validation: Agar koi type select nahi kiya
+    if (types.length === 0) {
+        resultArea.innerHTML = '<div class="alert alert-warning">Please select at least one question type (Behavioral, Situational, etc.)</div>';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+    resultArea.innerHTML = '<div class="p-5 text-center"><div class="spinner-border text-primary"></div><p class="mt-3">AI is thinking...</p></div>';
+
+    try {
+        const response = await fetch('/generate_questions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                job_role: role,
+                difficulty: difficulty,
+                num_questions: count,
+                question_types: types, // <--- Python code ke saath match karne ke liye 'question_types' kar diya
+                focus_skills: focus
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!data.questions || data.questions.length === 0) {
+            throw new Error("No questions returned");
+        }
+
+        let html = '<div class="list-group list-group-flush text-start">';
+        
+        data.questions.forEach((q, index) => {
+            // Category display logic fix kiya taaki 'Technical' hamesha na dikhe
+            const categoryLabel = q.type ? q.type : 'Question';
+            
+            html += `<div class="list-group-item border-0 mb-3 p-3 shadow-sm" style="border-radius: 12px; background: white;">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="badge text-primary" style="background: #eef2ff; text-transform: capitalize;">${categoryLabel}</span>
+                            <small class="text-muted">#${q.id || (index + 1)}</small>
+                        </div>
+                        <p class="mb-0 fw-medium text-dark">${q.text || 'Question text missing...'}</p>
+                    </div>`;
+        });
+        
+        html += '</div>';
+        resultArea.innerHTML = html;
+        
+    } catch (err) {
+        console.error("Frontend Error:", err);
+        resultArea.innerHTML = '<div class="alert alert-danger">Error generating questions. Please check your connection or API key.</div>';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-stars me-2"></i>Generate Questions';
+    }
+}
+    
+
+    document.getElementById('resumesInput').addEventListener('change', function() {
+        const count = this.files.length;
+        document.getElementById('fileCount').innerText = count > 0 ? `${count} files selected` : '';
+    });
+
+    function updateTableUI(data) {
+        const tbody = document.querySelector('#resultsTable tbody');
+        tbody.innerHTML = ''; 
+        data.forEach(res => {
+            const isExcellent = res.status === 'Excellent Match';
+            const scoreNum = parseInt(res.score)
+            const scoreColor = scoreNum >= 85 ? '#28a745' : (scoreNum >= 70 ? '#4e73df' : '#e74a3b');
+            
+            const badgeClass = isExcellent ? 'bg-success' : 
+                               res.status === 'Good Match' ? 'bg-primary' : 
+                               res.status === 'Potential Match' ? 'bg-warning' : 'bg-danger';
+            const skillBadges = res.skills ? res.skills.map(s => 
+                `<span class="badge bg-light text-dark border me-1" style="font-size: 0.7rem;">${s}</span>`).join('') : '';
+            const fileUrl = `${window.location.origin}/static/uploads/${res.filename}`;
+            tbody.innerHTML += `
+                <tr>
+                    <td>
+                        <div class="fw-bold text-dark">${res.candidate}</div>
+                        <small class="text-muted">${res.email || 'candidate@email.com'}</small>
+                    </td>
+                    <td><small class="text-secondary">${res.position || 'N/A'}</small></td>
+                    <td><small class="text-secondary">${res.experience || 'N/A'}</small></td>
+                    <td><div style="max-width: 200px; display: flex; flex-wrap: wrap; gap: 2px;">${skillBadges}</div></td>
+                    <td><span class="fw-bold" style="color: ${scoreColor}; font-size: 1.1rem;">${res.score}</span></td>
+                    <td><span class="badge ${badgeClass}-subtle text-dark border" style="font-weight: 500;">${res.status}</span></td>
+                    <td><small class="text-muted">${res.upload_date || 'N/A'}</small></td>
+                    <td><a href="${fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary px-3">View</a></td>
+                </tr>`;
+        });
+    }
+
+    window.onload = async () => {
+        try {
+            const response = await fetch('/get_saved_candidates');
+            const data = await response.json();
+            if (data.length > 0) updateTableUI(data.slice(0, 5));
+        } catch (err) { console.error("Database fetch failed:", err); }
+    };
+
+    document.getElementById('multiUploadForm').onsubmit = async (e) => {
+        e.preventDefault();
+        Swal.fire({
+            title: 'AI Analysis in Progress',
+            html: 'Scanning resumes with <b>NLP Model</b>...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+        const formData = new FormData(e.target);
+        try {
+            const response = await fetch('/analyze_candidates', { method: 'POST', body: formData });
+            const data = await response.json();
+            if (data.error) {
+                Swal.fire('Error', data.error, 'error');
+            } else {
+                const freshResponse = await fetch('/get_saved_candidates');
+                const freshData = await freshResponse.json();
+                updateTableUI(freshData.slice(0, 5));
+                const modalInstance = bootstrap.Modal.getInstance(document.getElementById('analyzeModal'));
+                if (modalInstance) modalInstance.hide();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Analysis Complete!',
+                    text: `${data.length} candidates analyzed and saved.`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        } catch (err) {
+            Swal.fire('Error', 'Server connection failed', 'error');
+        }
+    };
+
+    async function exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const resultArea = document.getElementById('questionsResult');
+        const questions = resultArea.querySelectorAll('.list-group-item');
+
+        if (questions.length === 0) {
+            Swal.fire('Error', 'Pehle questions generate karein!', 'warning');
+            return;
+        }
+
+        doc.setFontSize(18);
+        doc.setTextColor(118, 75, 162); 
+        doc.text("Interview Questions Report", 20, 20);
+        
+        doc.setFontSize(12);
+        doc.setTextColor(100);
+        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
+        doc.line(20, 35, 190, 35); 
+
+        let yPos = 45;
+        doc.setTextColor(0);
+
+        questions.forEach((q, index) => {
+            const type = q.querySelector('.badge').innerText;
+            const text = q.querySelector('p').innerText;
+
+            if (yPos > 270) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            doc.setFont("helvetica", "bold");
+            doc.text(`Q${index + 1} (${type}):`, 20, yPos);
+            yPos += 7;
+            
+            doc.setFont("helvetica", "normal");
+            const splitText = doc.splitTextToSize(text, 160);
+            doc.text(splitText, 25, yPos);
+            yPos += (splitText.length * 7) + 5;
+        });
+
+        doc.save("Interview_Questions.pdf");
+    }
+
+</script>
+</body>
+</html>

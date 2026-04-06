@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applicants Management | Smart Recruiter System</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; padding-bottom: 80px; }
+        .navbar-brand { font-family: 'DM Serif Display', serif; }
+        
+        /* Table Styling */
+        .card { border-radius: 12px; border: 1px solid #e2e8f0; }
+        .table thead th { 
+            background-color: #f8fafc; 
+            text-transform: uppercase; 
+            font-size: 11px; 
+            font-weight: 700; 
+            color: #64748b;
+            padding: 12px 16px;
+        }
+
+        /* Skills Container: Isse badges side-by-side (horizontal) rahenge */
+.skills-wrapper {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    flex-direction: row !important;
+    gap: 4px !important;
+    align-items: center;
+    padding: 5px 0;
+}
+
+/* Skill Badge: Ekdum professional aur compact design */
+.skill-badge {
+    display: inline-block !important;
+    font-size: 10px !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    white-space: nowrap; /* Text ko wrap hone se rokega */
+    border: 1px solid rgba(0,0,0,0.05);
+    margin-bottom: 2px;
+    transition: all 0.2s ease;
+}
+
+/* Hover effect for a premium feel */
+.skill-badge:hover {
+    filter: brightness(0.9);
+    cursor: default;
+}
+
+/* Dashboard Style Colors: Green, Blue, Purple and Gray */
+.bg-skill-green { 
+    background-color: #dcfce7 !important; 
+    color: #15803d !important; 
+}
+.bg-skill-blue { 
+    background-color: #dbeafe !important; 
+    color: #1e40af !important; 
+}
+.bg-skill-purple { 
+    background-color: #f3e8ff !important; 
+    color: #6b21a8 !important; 
+}
+.bg-skill-gray { 
+    background-color: #f3f4f6 !important; 
+    color: #374151 !important; 
+}
+
+/* Column Width Control: Taaki table bhage na */
+td:has(.skills-wrapper) {
+    max-width: 250px; /* Aap isse chota ya bada kar sakte hain */
+    min-width: 150px;
+}
+
+        /* Match Score Bar */
+        .match-score-container { display: flex; align-items: center; gap: 8px; }
+        .match-bar { height: 6px; border-radius: 10px; width: 60px; background: #e2e8f0; overflow: hidden; }
+        
+        /* Floating Bottom Bar */
+        .action-footer {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 1000px;
+            background: white; border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 12px 24px; z-index: 1000;
+            border: 1px solid #e2e8f0;
+            display: none; /* Sirf checkbox select hone par dikhega */
+        }
+        
+        .status-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 6px; }
+        .bg-excellent { background-color: #dcfce7; color: #15803d; }
+        
+        .avatar-circle {
+            width: 35px; height: 35px; background-color: #e9ecef;
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-weight: bold; color: #495057;
+        }
+        .skill-badge {
+            background-color: #e8f5e9; color: #2e7d32; border: none;
+            border-radius: 12px; padding: 2px 10px; font-size: 11px; margin: 1px;
+        }
+        .status-pill {
+            border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 500;
+        }
+        .bg-excellent { background-color: #e8f5e9; color: #2e7d32; } /* Green */
+        .bg-good { background-color: #e3f2fd; color: #1565c0; }      /* Blue */
+        .bg-low { background-color: #ffebee; color: #c62828; }
+
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top shadow-sm py-3">
+    <div class="container">
+        <a class="navbar-brand fw-bold me-5" href="/dashboard" style="color: #063338; font-size: 2rem; font-family:'DM Serif Display', serif;">Smart Recruiter System</a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+                 <li class="nav-item"><a class="nav-link" href="#">Analytics</a></li>
+                <li class="nav-item"><a href="/applicants" class="nav-link fw-semibold active text-primary px-3">Applicants</a></li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold text-secondary px-3" href="/settings">Settings</a>
+                </li>
+               
+            </ul>
+
+            <div class="d-flex align-items-center">
+                <div class="dropdown me-3">
+                    <div class="position-relative cursor-pointer" data-bs-toggle="dropdown" id="notifDropdown">
+                        <i class="bi bi-bell fs-5 text-secondary"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notifCount" style="display: none; font-size: 0.6rem; padding: 0.35em 0.5em;">0</span>
+                    </div>
+                    <div class="dropdown-menu dropdown-menu-end shadow border-0 mt-3 p-0" style="width: 320px; border-radius: 15px; overflow: hidden;">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+                            <h6 class="mb-0 fw-bold">Notifications</h6>
+                            <span class="badge bg-primary text-white small" id="notifLabel" style="font-size: 0.7rem;">0 New</span>
+                        </div>
+                        <div id="notifContainer" style="max-height: 350px; overflow-y: auto;">
+                            <div class="p-4 text-center text-muted small">
+                                <i class="bi bi-bell-slash d-block fs-2 mb-2 opacity-25"></i>
+                                No new notifications
+                            </div>
+                        </div>
+                        <div class="p-2 border-top text-center">
+                            <a href="#" class="text-primary small fw-bold text-decoration-none">View All</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="rounded-circle overflow-hidden me-2 shadow-sm" style="width: 38px; height: 38px; border: 1px solid #ddd; flex-shrink: 0;">
+                            {% if profile and profile.profile_pic %}
+                                <img src="{{ url_for('static', filename='uploads/' + profile.profile_pic) }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                <div class="d-flex align-items-center justify-content-center h-100 bg-light">
+                                    <i class="bi bi-person-fill text-secondary fs-5"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <span class="fw-semibold">{{ name }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" style="border-radius: 12px;">
+                        <li><a class="dropdown-item py-2" href="/settings"><i class="bi bi-person me-2"></i> Profile</a></li>
+                        <li><a class="dropdown-item py-2" href="/settings"><i class="bi bi-gear me-2"></i> Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item py-2 text-danger" href="/logout"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<main class="container mt-4"> 
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <h1 class="fw-bold mb-1" style="color: #f8f9fb; font-size: 2rem;">Candidates Management</h1>
+            <p class="small mb-0" style="color:white;">View and manage all candidate profiles with AI-powered insights</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/export_all_candidates" class="btn btn-light border btn-sm fw-bold text-secondary d-inline-flex align-items-center justify-content-center" style="height: 38px; padding: 0 12px;">
+    <i class="bi bi-download me-2"></i> Export Data
+</a>
+
+        <div class="dropdown d-inline-block">
+            <button class="btn btn-light border btn-sm fw-bold text-secondary dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown" style="padding: 7px 12px;">
+            <i class="bi bi-layers me-2"></i> Bulk Action </button>
+            <ul class="dropdown-menu shadow border-0 mt-2" style="border-radius: 12px; font-size: 14px;">
+                <li><a class="dropdown-item py-2 text-primary fw-bold" href="javascript:void(0)" onclick="generateDossier()">
+                <i class="bi bi-file-earmark-pdf-fill me-2"></i> Generate Selected Dossier </a></li></ul>
+        </div>
+            <button class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#addCandidateModal"><i class="bi bi-plus-lg me-2"></i>Add Candidate</button>
+        </div>
+    </div>
+
+    <div class="d-flex gap-3 mb-4 flex-wrap">
+        <div class="col-md-4">
+    <form action="/applicants" method="GET" class="d-flex">
+        <div class="input-group bg-white rounded-3 border shadow-sm">
+            <span class="input-group-text bg-transparent border-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" name="search" class="form-control border-0 py-2 shadow-none" 
+                   placeholder="Search candidates..." value="{{ search_query }}">
+            <button type="submit" style="display: none;"></button>
+        </div>
+    </form>
+</div>
+<div class="table-responsive bg-white rounded shadow-sm">
+    <table class="table align-middle">
+        <thead>
+            </thead>
+        <tbody>
+            {% for app in applicants %}
+            <tr>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+        <select id="filterSkill" class="form-select form-select-sm border-secondary-subtle fw-medium" style="width: 150px;">
+        <option value="">All Skills</option>
+        {% for skill in skills %}
+        <option value="{{ skill }}">{{ skill }}</option>
+        {% endfor %}
+    </select>
+
+        <select id="filterPosition" class="form-select form-select-sm border-secondary-subtle fw-medium" style="width: 160px;">
+        <option value="">All Positions</option>
+        {% for pos in positions %}
+        <option value="{{ pos }}">{{ pos }}</option>
+        {% endfor %}
+    </select>
+
+    <select id="filterScore" class="form-select form-select-sm border-secondary-subtle fw-medium" style="width: 140px;">>
+        <option value="0">Min Score (0%)</option>
+        <option value="50">50% +</option>
+        <option value="70">70% +</option>
+        <option value="85">85% +</option>
+    </select>
+
+    <button id="clearFilters" class="btn btn-link text-decoration-none text-primary fw-bold btn-sm">Clear Filters</button>
+    </div>
+
+    <div class="card bg-white shadow-sm overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4"><input type="checkbox" class="form-check-input" id="selectAll"></th>
+                        <th>CANDIDATE</th>
+                        <th>POSITION</th>
+                        <th>EXPERIENCE</th>
+                        <th>KEY SKILLS</th>
+                        <th>MATCH SCORE</th>
+                        <th>STATUS</th>
+                        <th>UPLOAD DATE</th>
+                        <th class="text-end pe-4">ACTIONS</th>
+                    </tr>
+                </thead>
+<tbody>
+    {% for applicant in applicants %}
+    <tr class="align-middle">
+       <td class="ps-4">
+    <input type="checkbox" class="form-check-input row-checkbox" data-id="{{ applicant[0] if applicant is iterable and not applicant.id else applicant.id }}">
+</td>
+        
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="avatar-circle me-3">{{ applicant.candidate_name[0] | upper }}</div>
+                <div>
+                    <div class="fw-bold text-dark mb-0" style="font-size: 13px;">{{ applicant.candidate_name }}</div>
+                    <div class="text-muted" style="font-size: 11px;">{{ applicant.email }}</div>
+                </div>
+            </div>
+        </td>
+
+        <td class="small text-dark fw-medium">{{ applicant.position }}</td>
+        <td class="small text-muted">{{ applicant.experience }}</td>
+
+        <td>
+    <div class="skills-wrapper">
+        {% set skills_list = applicant.skills.replace('[', '').replace(']', '').replace('"', '').replace("'", "").split(',') %}
+        {% for skill in skills_list %}
+            {% if skill.strip() %}
+                <span class="skill-badge bg-skill-{{ ['green', 'blue', 'purple', 'gray'] | random }}">
+                    {{ skill.strip() }}
+                </span>
+            {% endif %}
+        {% endfor %}
+    </div>
+</td>
+
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="progress flex-grow-1 me-2" style="height: 5px; width: 50px;">
+                    <div class="progress-bar bg-success" style="width: {{ applicant.score }}"></div>
+                </div>
+                <span class="fw-bold text-success" style="font-size: 12px;">{{ applicant.score }}</span>
+            </div>
+        </td>
+
+        <td>
+            {% set score_val = applicant.score.replace('%', '') | int %}
+            <span class="status-pill {% if score_val >= 85 %}bg-excellent{% elif score_val >= 70 %}bg-good{% else %}bg-low{% endif %}">
+                {{ applicant.status }}
+            </span>
+        </td>
+
+        <td class="small text-muted">{{ applicant.upload_date }}</td>
+        <td class="text-end pe-4">
+            <a href="{{ url_for('view_resume', filename=applicant.filename) }}" target="_blank" class="btn btn-sm btn-outline-primary fw-bold px-3">View</a>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3 px-2">
+        <span class="text-muted small" style="color:white !important;">Showing <b>{{ applicants|length }}</b> of <b>{{ applicants|length }}</b> candidates
+</span>
+        <nav>
+    <ul class="pagination pagination-sm mb-0">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link border-0" href="{{ url_for('applicants_page', page=pagination.prev_num, search=search_query) if pagination.has_prev else '#' }}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+
+        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                    <a class="page-link rounded-circle mx-1" href="{{ url_for('applicants_page', page=page_num, search=search_query) }}">
+                        {{ page_num }}
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link border-0">...</span></li>
+            {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link border-0" href="{{ url_for('applicants_page', page=pagination.next_num, search=search_query) if pagination.has_next else '#' }}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+    </ul>
+</nav>
+    </div>
+</main>
+
+<div class="action-footer d-flex justify-content-between align-items-center" id="floatingBar">
+    <div class="d-flex align-items-center">
+        <span class="fw-bold text-dark me-3" id="selectedCount">0 candidates selected</span>
+        <button type="button" id="clearSelectionBtn" class="btn btn-link btn-sm text-primary text-decoration-none fw-bold">
+    Clear selection
+</button>
+    </div>
+    
+    <div class="d-flex gap-2">
+        <button id="sendEmailBtn" class="btn btn-light border btn-sm fw-bold"><i class="bi bi-envelope me-2"></i>Send Email</button>
+        <button id="exportSelectedBtn" class="btn btn-light border btn-sm fw-bold"><i class="bi bi-download me-2"></i>Export Selected</button>
+        <button class="btn btn-danger btn-sm fw-bold px-4" id="deleteBtn" onclick="deleteSelected()"><i class="bi bi-trash me-2"></i>Delete</button>
+    </div>
+</div>
+
+<div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-envelope-paper me-2"></i> Send Interview Invitation</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">To:</label>
+                    <input type="text" id="emailTo" class="form-control bg-light" readonly>
+                    <small class="text-muted">Shortlisted Applicants</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Subject:</label>
+                    <input type="text" id="emailSubject" class="form-control" value="Interview Invitation from TechNova Solutions Pvt. Ltd.">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Message Body:</label>
+                    <textarea id="emailBody" class="form-control" rows="10">
+Dear Candidate,
+
+Greetings from **TechNova Solutions Pvt. Ltd.**
+
+We are pleased to inform you that your profile has been shortlisted for the **Software Developer** position at our company. We would like to invite you to attend an in-person interview with our team.
+
+Interview Details:
+Company Name: TechNova Solutions Pvt. Ltd.
+Position: Software Developer
+Interview Date: 25 March 2026
+Interview Time: 11:00 AM
+Interview Type: Offline (In-person)
+Interview Location: TechNova Solutions Pvt. Ltd., 3rd Floor, Business Plaza, Andheri East, Mumbai – 400069
+
+Please arrive at the venue at least 10 minutes before the scheduled time and bring a copy of your resume and any relevant documents.
+
+Kindly confirm your availability by replying to this email.
+
+We look forward to meeting you.
+
+Best regards,
+Ananya Mehta
+HR Manager
+TechNova Solutions Pvt. Ltd.
+Mumbai, India
+Phone: +91 98765 43210
+Email: [hr@technova.com](mailto:hr@technova.com)
+Website: [www.technova.com](http://www.technova.com)
+
+                    </textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary fw-bold px-4" id="confirmSendEmail">
+                    <i class="bi bi-send me-2"></i> Send Emails
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addCandidateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill me-2"></i>Add New Candidate</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addCandidateForm" enctype="multipart/form-data">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Full Name</label>
+                        <input type="text" name="name" class="form-control" placeholder="John Doe" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Email Address</label>
+                        <input type="email" name="email" class="form-control" placeholder="john@example.com" required>
+                    </div>
+                    <div class="mb-3">
+    <label class="form-label fw-bold">Applying for Position</label>
+    <div class="input-group">
+        <select name="position" id="positionSelect" class="form-select" required>
+            <option value="">Select Position</option>
+            <option value="Python Developer">Python Developer</option>
+            <option value="Frontend Developer">Frontend Developer</option>
+            <option value="Data Analyst">Data Analyst</option>
+            </select>
+        <button class="btn btn-outline-secondary" type="button" id="addNewPosBtn">
+            <i class="bi bi-plus-circle"></i>
+        </button>
+    </div>
+</div>
+
+<div class="mb-3 d-none" id="newPosInputDiv">
+    <label class="form-label fw-bold text-success">Enter New Position Name</label>
+    <input type="text" id="customPosition" class="form-control" placeholder="e.g. Backend Engineer">
+</div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Upload Resume (PDF/Docx)</label>
+                        <input type="file" name="resume" class="form-control" accept=".pdf,.docx" required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success fw-bold px-4" id="saveCandidateBtn">
+                        <i class="bi bi-check-circle me-2"></i>Process & Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Logic to show/hide floating bar
+    const checkboxes = document.querySelectorAll('.row-checkbox');
+    const floatingBar = document.getElementById('floatingBar');
+    const countText = document.getElementById('selectedCount');
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+            if (checkedCount > 0) {
+                floatingBar.style.display = 'flex';
+                countText.innerText = `${checkedCount} candidates selected`;
+            } else {
+                floatingBar.style.display = 'none';
+            }
+        });
+    });
+
+    function getSkillsHTML(skills) {
+    if (!skills || !Array.isArray(skills) || skills.length === 0) {
+        return '<span class="text-muted" style="font-size:10px;">N/A</span>';
+    }
+    
+    // Alag-alag colors assign karne ke liye classes
+    const colors = ['bg-skill-green', 'bg-skill-blue', 'bg-skill-purple'];
+    
+    // Sirf top 3 skills dikhayenge taaki table chota rahe
+    const displaySkills = skills.slice(0, 3);
+    const extra = skills.length > 3 ? `<small class="text-muted" style="font-size:9px;">+${skills.length - 3}</small>` : '';
+
+    return `
+        <div class="skills-container" style="display: flex; flex-wrap: wrap; gap: 4px; max-width: 200px;">
+            ${displaySkills.map((s, i) => `<span class="skill-badge ${colors[i % colors.length]}">${s}</span>`).join('')}
+            ${extra}
+        </div>
+    `;}
+
+    async function deleteSelected() {
+    // 1. Saari selected IDs nikaalo
+    const selectedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
+    const idsToDelete = Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-id'));
+
+    if (idsToDelete.length === 0) return;
+
+    // 2. SweetAlert se confirmation lein (Aapne dashboard mein use kiya hai wahi style)
+    const result = await Swal.fire({
+        title: 'This candidate will be permanently deleted.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Delete'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const response = await fetch('/delete_candidates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: idsToDelete })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                Swal.fire('Deleted!', data.message, 'success').then(() => {
+                    window.location.reload(); // Page refresh karke table update karein
+                });
+            } else {
+                Swal.fire('Error', data.error, 'error');
+            }
+        } catch (error) {
+            Swal.fire('Error', 'Server connection failed', 'error');
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // --- 1. Elements Selection ---
+    const filterSkill = document.getElementById('filterSkill');
+    const filterPosition = document.getElementById('filterPosition');
+    const filterScore = document.getElementById('filterScore');
+    const clearBtn = document.getElementById('clearFilters');
+    
+    const actionPopup = document.getElementById('floatingBar'); 
+    const selectionText = document.getElementById('selectedCount');
+
+    // --- 2. Floating Bar & Counter Function ---
+    function refreshSelectionCount() {
+        const tickedOnes = document.querySelectorAll('.row-checkbox:checked').length;
+        
+        if (selectionText) {
+            selectionText.innerText = `${tickedOnes} candidates selected`;
+        }
+
+        if (actionPopup) {
+            actionPopup.style.display = tickedOnes > 0 ? 'flex' : 'none';
+        }
+    }
+
+    function applyFilters() {
+        const rows = document.querySelectorAll('tbody tr');
+        const skillVal = filterSkill.value.toLowerCase().trim();
+        const posVal = filterPosition.value.toLowerCase().trim();
+        const scoreVal = parseInt(filterScore.value) || 0;
+
+        // Score display update (agar aapne span rakha hai score dikhane ke liye)
+        const scoreValueDisplay = document.getElementById('scoreValueDisplay');
+        if (scoreValueDisplay) scoreValueDisplay.innerText = scoreVal + '%';
+
+        rows.forEach(row => {
+            // Safety: Check karo ki cells exist karte hain
+            if (row.cells.length < 6) return;
+
+            // Index 2: Position, Index 4: Skills, Index 5: Score
+            const rowPos = row.cells[2].innerText.toLowerCase().trim();
+            const rowSkills = row.cells[4].innerText.toLowerCase().trim();
+            const rowScore = parseInt(row.cells[5].innerText.replace('%', '').trim()) || 0;
+
+            const matchesSkill = skillVal === "" || rowSkills.includes(skillVal);
+            const matchesPos = posVal === "" || rowPos.includes(posVal);
+            const matchesScore = rowScore >= scoreVal;
+
+            if (matchesSkill && matchesPos && matchesScore) {
+                row.style.display = ""; // Show
+            } else {
+                row.style.display = "none"; // Hide
+                // Hidden row ko uncheck karo taaki count galat na ho
+                const cb = row.querySelector('.row-checkbox');
+                if(cb) cb.checked = false;
+            }
+        });
+
+        refreshSelectionCount();
+    }
+
+    // --- 4. Event Listeners ---
+    if (filterSkill) filterSkill.addEventListener('change', applyFilters);
+    if (filterPosition) filterPosition.addEventListener('change', applyFilters);
+    
+    // 'input' event slider ke liye best hai, 'change' tab chalta hai jab slider chhod dete ho
+    if (filterScore) filterScore.addEventListener('input', applyFilters);
+    
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            filterSkill.value = ""; 
+            filterPosition.value = ""; 
+            filterScore.value = "0";
+            
+            // rows.forEach ki jagah ye line likho:
+            document.querySelectorAll('tbody tr').forEach(row => {
+                row.style.display = ""; // Saare candidates wapas dikhne lagenge
+            });
+            
+            const scoreValueDisplay = document.getElementById('scoreValueDisplay');
+            if (scoreValueDisplay) scoreValueDisplay.innerText = '0%';
+            
+            refreshSelectionCount();
+        });
+    }
+
+    // Individual checkbox click listener
+    document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.addEventListener('change', refreshSelectionCount);
+    });
+
+    const masterTick = document.getElementById('selectAll');
+    if (masterTick) {
+        masterTick.addEventListener('change', function() {
+            const visibleCheckboxes = document.querySelectorAll('tbody tr:not([style*="display: none"]) .row-checkbox');
+            visibleCheckboxes.forEach(cb => cb.checked = masterTick.checked);
+            refreshSelectionCount();
+        });
+    }
+
+    // Individual Checkbox (Manual)
+    const mainTableBody = document.querySelector('tbody');
+    if (mainTableBody) {
+        mainTableBody.addEventListener('change', function(e) {
+            if (e.target.classList.contains('row-checkbox')) {
+                refreshSelectionCount();
+                
+                // Sync Header Tick
+                const visible = document.querySelectorAll('tbody tr:not([style*="display: none"]) .row-checkbox');
+                const checked = document.querySelectorAll('tbody tr:not([style*="display: none"]) .row-checkbox:checked');
+                if (masterTick) masterTick.checked = (visible.length === checked.length && visible.length > 0);
+            }
+        });
+    }
+
+    // Initial Hide
+    refreshSelectionCount();
+    
+// --- CLEAR SELECTION FINAL LOGIC ---
+    const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+
+    if (clearSelectionBtn) {
+        clearSelectionBtn.onclick = function(e) {
+            e.preventDefault(); // Kisi bhi default action ko roko
+            
+            console.log("Clear Selection Clicked!"); // Console mein check karne ke liye
+
+            // 1. Saare checkboxes pakdo aur uncheck karo
+            const allBoxes = document.querySelectorAll('.row-checkbox');
+            allBoxes.forEach(cb => {
+                cb.checked = false;
+            });
+
+            // 2. Main "Select All" waala checkbox bhi uncheck karo
+            const topTick = document.getElementById('selectAll');
+            if (topTick) topTick.checked = false;
+
+            // 3. Counter ko reset karo aur bar ko hide karo
+            // Humne jo upar refreshSelectionCount banaya tha, usko yahan call kar rahe hain
+            if (typeof refreshSelectionCount === "function") {
+                refreshSelectionCount();
+            }
+        };
+    }
+
+    // --- ADVANCED EMAIL MODAL LOGIC ---
+    const sendEmailBtn = document.getElementById('sendEmailBtn');
+    const emailModal = new bootstrap.Modal(document.getElementById('emailModal'));
+    const confirmSendBtn = document.getElementById('confirmSendEmail');
+
+    if (sendEmailBtn) {
+        sendEmailBtn.addEventListener('click', function() {
+            const selectedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
+            const emails = [];
+            
+            selectedCheckboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                const email = row.querySelector('.text-muted').innerText; // Aapka email id class yahi hai
+                emails.push(email);
+            });
+
+            if (emails.length > 0) {
+                // Modal mein emails dikhao
+                document.getElementById('emailTo').value = emails.join(', ');
+                emailModal.show();
+            } else {
+                Swal.fire('No Selection', 'Please select candidates first.', 'warning');
+            }
+        });
+    }
+
+    // Modal ke andar wala "Send" button logic
+    if (confirmSendBtn) {
+        confirmSendBtn.addEventListener('click', async function() {
+            const emailString = document.getElementById('emailTo').value;
+            const emailsArray = emailString.split(',').map(e => e.trim());
+            const subject = document.getElementById('emailSubject').value;
+            const body = document.getElementById('emailBody').value;
+
+        // UI Updates
+        confirmSendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Sending...';
+        confirmSendBtn.disabled = true;
+
+        try {
+            const response = await fetch('/send_bulk_emails', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    emails: emailsArray,
+                    subject: subject,
+                    body: body
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                Swal.fire('Sent!', result.message, 'success');
+                emailModal.hide();
+            } else {
+                Swal.fire('Error', result.error || 'Failed to send emails', 'error');
+            }
+        } catch (error) {
+            Swal.fire('Error', 'Server connection failed', 'error');
+        } finally {
+            confirmSendBtn.innerHTML = '<i class="bi bi-send me-2"></i> Send Emails';
+            confirmSendBtn.disabled = false;
+        }
+    });
+}
+
+// --- EXPORT TO CSV LOGIC ---
+    const exportBtn = document.getElementById('exportSelectedBtn');
+
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            const selectedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
+            
+            if (selectedCheckboxes.length === 0) {
+                Swal.fire('No Selection', 'Please select candidates to export.', 'info');
+                return;
+            }
+
+            // 1. CSV ki Headers taiyar karo
+            let csvContent = "Candidate Name,Email,Position,Experience,Match Score,Status\n";
+
+            // 2. Data ik इकट्ठा karo
+            selectedCheckboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                const name = row.querySelector('.fw-bold.text-dark').innerText;
+                const email = row.querySelector('.text-muted').innerText;
+                const position = row.cells[2].innerText;
+                const exp = row.cells[3].innerText;
+                const score = row.cells[5].innerText.replace('%', '');
+                const status = row.querySelector('.status-pill').innerText;
+
+                // Ek row ki entry banao (comma separated)
+                csvContent += `"${name}","${email}","${position}","${exp}","${score}","${status}"\n`;
+            });
+
+            // 3. File download karwao
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Selected_Candidates_${new Date().toLocaleDateString()}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            Swal.fire('Exported!', 'Your CSV file has been downloaded.', 'success');
+        });
+    }
+
+    // --- ADD CANDIDATE FORM SUBMISSION ---
+    const addForm = document.getElementById('addCandidateForm');
+    
+    if (addForm) {
+        addForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('saveCandidateBtn');
+            const formData = new FormData(this);
+
+            // Button Loading State
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/add_candidate_manual', {
+                    method: 'POST',
+                    body: formData // File bhej rahe hain isliye FormData zaruri hai
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Candidate added and Resume analyzed.',
+                        icon: 'success'
+                    }).then(() => window.location.reload());
+                } else {
+                    Swal.fire('Error', result.error || 'Something went wrong', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Server connection failed', 'error');
+            } finally {
+                submitBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Process & Save';
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    document.getElementById('addNewPosBtn').addEventListener('click', function() {
+    const inputDiv = document.getElementById('newPosInputDiv');
+    inputDiv.classList.toggle('d-none');
+});
+
+// Jab user manual add karega, toh dropdown update ho jaye
+document.getElementById('customPosition').addEventListener('blur', function() {
+    const val = this.value.trim();
+    if (val) {
+        const select = document.getElementById('positionSelect');
+        const option = new Option(val, val);
+        select.add(option);
+        select.value = val; // Nayi position select kar lo
+        this.parentElement.classList.add('d-none'); // Hide input
+    }
+});
+
+});
+
+// Delete Function (Isko DOMContentLoaded ke bahar rakho kyunki ye HTML onclick se call ho raha hai)
+async function deleteSelected() {
+    const selectedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
+    const idsToDelete = Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-id'));
+
+    if (idsToDelete.length === 0) return;
+
+    const result = await Swal.fire({
+        title: 'This candidate will be permanently deleted.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Delete'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const response = await fetch('/delete_candidates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: idsToDelete })
+            });
+            if (response.ok) {
+                Swal.fire('Deleted!', 'Candidates removed.', 'success').then(() => window.location.reload());
+            }
+        } catch (error) {
+            Swal.fire('Error', 'Connection failed', 'error');
+        }
+    }
+}
+
+async function generateDossier() {
+    const selected = document.querySelectorAll('.row-checkbox:checked');
+    const ids = Array.from(selected).map(cb => cb.getAttribute('data-id'));
+    
+    if (ids.length === 0) {
+        Swal.fire('Opps!', 'Pehle candidates select karo!', 'warning');
+        return;
+    }
+
+    Swal.fire({ title: 'Processing...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+
+    try {
+        const response = await fetch('/generate_dossier', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: ids })
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "Selection_Dossier.pdf";
+            document.body.appendChild(a);
+            a.click();
+            Swal.close();
+        } else {
+            // Agar error hai, tabhi JSON read karo
+            const errorText = await response.text();
+            console.error("Server Error:", errorText);
+            Swal.fire('Error', 'Server error. Check terminal/console.', 'error');
+        }
+    } catch (error) {
+        Swal.fire('Error', 'Connection failed!', 'error');
+    }
+}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | Smart Recruiter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #133437 0%, #4ba5ad 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .register-card {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 450px;
+        }
+        .register-card h2 {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+        }
+        .btn-register {
+            background: #2b646a;
+            color: white;
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            border: none;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+        .btn-register:hover {
+            background: #44919a;
+            transform: translateY(-2px);
+            color: white;
+        }
+        .footer-text {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .footer-text a {
+            color: #1b5552;
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="register-card">
+    <h2>Create Account</h2>
+    <p class="text-center text-muted mb-4">Join Smart Recruiter today!</p>
+    
+    <form action="/register_user" method="POST">
+        <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="username" class="form-control" placeholder="John Doe" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email Address</label>
+            <input type="email" name="email" class="form-control" placeholder="name@example.com" required>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Your Role</label>
+            <select name="role" class="form-select" required>
+                <option value="" disabled selected>Select your role</option>
+                <option value="Admin">Admin (Recruiter)</option>
+                <option value="HR">HR Manager</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn-register shadow">Sign Up</button>
+    </form>
+    
+    <div class="footer-text">
+        Already have an account? <a href="/login">Login here</a>
+    </div>
+</div>
+
+</body>
+</html>
